@@ -209,6 +209,28 @@
     .guide-shortcut-body strong { color: #d97706; }
     .guide-shortcut-body a { color: var(--accent); font-weight: 700; text-decoration: underline; }
     .guide-shortcut-body a:hover { opacity: 0.8; }
+    .guide-tabs {
+      display: flex; gap: 8px; padding: 0 24px 16px;
+      border-bottom: 1px solid var(--border); margin-bottom: 4px;
+    }
+    .guide-tab-btn {
+      flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--bg3); color: var(--text2); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .guide-tab-btn.active {
+      background: var(--gradient); color: white; border-color: transparent;
+    }
+    .guide-video-wrap {
+      padding: 16px 24px 24px;
+    }
+    .guide-video-wrap video {
+      width: 100%; border-radius: 10px; background: #000;
+      max-height: 60vh;
+    }
+    .guide-video-note {
+      font-size: 12px; color: var(--text2); margin-top: 10px; text-align: center;
+    }
 
     /* ===================== DASHBOARD ===================== */
     .back-btn {
@@ -905,7 +927,11 @@
       <h2 data-t="guideTitle">מדריך להורדת נתונים</h2>
       <button class="modal-close" onclick="closeGuide()">&times;</button>
     </div>
-    <div class="modal-body" id="guide-modal-body"></div>
+    <div class="guide-tabs">
+      <button class="guide-tab-btn active" id="guide-tab-text" onclick="switchGuideTab('text')">📖 מדריך כתוב</button>
+      <button class="guide-tab-btn" id="guide-tab-video" onclick="switchGuideTab('video')">🎬 סרטון הדרכה</button>
+    </div>
+    <div id="guide-modal-body"></div>
   </div>
 </div>
 
@@ -1195,9 +1221,30 @@ function renderAll() {
 // ===================================================
 function openGuide() {
   const overlay = document.getElementById('guide-modal-overlay');
-  const body = document.getElementById('guide-modal-body');
-  body.innerHTML = buildGuideSteps();
+  document.getElementById('guide-modal-body').innerHTML = buildGuideSteps();
+  document.getElementById('guide-tab-text').classList.add('active');
+  document.getElementById('guide-tab-video').classList.remove('active');
   overlay.classList.add('open');
+}
+
+function switchGuideTab(tab) {
+  const body = document.getElementById('guide-modal-body');
+  document.getElementById('guide-tab-text').classList.toggle('active', tab === 'text');
+  document.getElementById('guide-tab-video').classList.toggle('active', tab === 'video');
+  if (tab === 'text') {
+    body.innerHTML = buildGuideSteps();
+  } else {
+    const note = state.lang === 'he'
+      ? 'סרטון מודרך — איך להוריד את קובץ הנתונים מאינסטגרם'
+      : 'Tutorial video — how to download your Instagram data file';
+    body.innerHTML = `
+      <div class="guide-video-wrap">
+        <video controls playsinline preload="metadata">
+          <source src="סרטון הדרכה להורדת הקבצי JSON.mp4" type="video/mp4">
+        </video>
+        <p class="guide-video-note">${note}</p>
+      </div>`;
+  }
 }
 
 function closeGuide(e) {
