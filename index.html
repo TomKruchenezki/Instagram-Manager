@@ -388,6 +388,16 @@
     }
     .cat-badge:hover { opacity: 0.75; }
     .user-actions { display: flex; gap: 6px; flex-direction: column; flex-shrink: 0; }
+    .btn-compact { padding: 5px 8px !important; font-size: 11px !important; }
+    .btn-icon-only {
+      width: 34px; height: 34px; border-radius: 50%; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+      transition: opacity var(--transition);
+      text-decoration: none;
+    }
+    .btn-icon-only:hover { opacity: 0.85; }
     .action-btn {
       border: none;
       border-radius: 50px;
@@ -1960,7 +1970,12 @@ function buildUserListHTML(list, tabId, infoText) {
             </div>
           </div>
           <div class="user-actions">
-            <a class="action-btn btn-instagram" href="https://www.instagram.com/${encodeURIComponent(username)}/" target="_blank" rel="noopener">${t('openInstagram')}</a>
+            ${username.length > 20
+              ? `<a class="btn-icon-only" href="https://www.instagram.com/${encodeURIComponent(username)}/" target="_blank" rel="noopener" title="${t('openInstagram')}">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
+                 </a>`
+              : `<a class="action-btn btn-instagram btn-compact" href="https://www.instagram.com/${encodeURIComponent(username)}/" target="_blank" rel="noopener">${t('openInstagram')}</a>`
+            }
             ${showQueueBtn && !inQueue ? `<button class="action-btn btn-queue" onclick="addToQueue('${escapeHtml(username)}')">${t('addToQueue')}</button>` : ''}
             ${showQueueBtn && inQueue ? `<button class="action-btn btn-unqueue" onclick="removeFromQueue('${escapeHtml(username)}')">${t('removeFromQueue')}</button>` : ''}
           </div>
