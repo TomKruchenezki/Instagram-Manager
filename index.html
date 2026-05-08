@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram Follower Manager</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    /* ===================== RESET & BASE ===================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f8f8f8;
+      --bg2: #ffffff;
+      --bg3: #f0f0f0;
+      --border: #e0e0e0;
+      --text: #111111;
+      --text2: #555555;
+      --text3: #888888;
+      --accent: #7c3aed;
+      --accent2: #e11d48;
+      --gradient: linear-gradient(135deg, #7c3aed 0%, #e11d48 100%);
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: 0.2s ease;
+    }
+    [data-theme="dark"] {
+      --bg: #0f0f0f;
+      --bg2: #1a1a1a;
+      --bg3: #242424;
+      --border: #333333;
+      --text: #f0f0f0;
+      --text2: #bbbbbb;
+      --text3: #777777;
+      --shadow: 0 2px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background var(--transition), color var(--transition);
+      line-height: 1.5;
+    }
+    [dir="ltr"] { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+
+    /* ===================== HEADER ===================== */
+    .header {
+      background: var(--gradient);
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(124,58,237,0.3);
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .header-logo svg { width: 28px; height: 28px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .icon-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      border-radius: 50px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background var(--transition), transform var(--transition);
+      white-space: nowrap;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.35); transform: scale(1.03); }
+    .icon-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ===================== LAYOUT ===================== */
+    .main { max-width: 1100px; margin: 0 auto; padding: 28px 16px 60px; }
+
+    /* ===================== UPLOAD SECTION ===================== */
+    #upload-section { display: block; }
+    #dashboard-section { display: none; }
+    .hero { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+    .hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 12px; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero p { color: var(--text2); font-size: 16px; max-width: 520px; margin: 0 auto; }
+    .upload-box {
+      background: var(--bg2);
+      border: 2.5px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 56px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition), transform var(--transition);
+      max-width: 560px;
+      margin: 0 auto 32px;
+    }
+    .upload-box:hover, .upload-box.drag-over {
+      border-color: var(--accent);
+      background: var(--bg3);
+      transform: scale(1.01);
+    }
+    .upload-box svg { width: 52px; height: 52px; color: var(--accent); margin-bottom: 16px; }
+    .upload-box h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .upload-box p { color: var(--text2); font-size: 14px; margin-bottom: 20px; }
+    .upload-btn {
+      background: var(--gradient);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity var(--transition), transform var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .upload-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    #file-input { display: none; }
+    .upload-error { color: #ef4444; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 12px 16px; margin: 0 auto 16px; max-width: 560px; font-size: 14px; display: none; }
+    .upload-loading { display: none; text-align: center; color: var(--text2); font-size: 15px; }
+    .upload-loading .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===================== GUIDE CARD ===================== */
+    .guide-card {
+      background: var(--bg2);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      max-width: 560px;
+      margin: 0 auto;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .guide-card-header {
+      background: linear-gradient(135deg, #1d1d1d 0%, #333 100%);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    [data-theme="dark"] .guide-card-header { background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%); }
+    .guide-card-header h3 { color: white; font-size: 15px; font-weight: 700; flex: 1; }
+    .guide-card-header .chevron { color: white; width: 18px; height: 18px; transition: transform var(--transition); }
+    .guide-card-header.open .chevron { transform: rotate(180deg); }
+    .guide-steps { padding: 20px; display: none; }
+    .guide-steps.open { display: block; }
+    .guide-step { display: flex; gap: 14px; margin-bottom: 18px; }
+    .guide-step:last-child { margin-bottom: 0; }
+    .guide-step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--gradient); color: white;
+      font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .guide-step-text { font-size: 14px; color: var(--text); }
+    .guide-step-text strong { color: var(--accent); }
+    .guide-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--gradient); color: white;
+      border-radius: 50px; padding: 8px 18px;
+      font-size: 13px; font-weight: 700;
+      text-decoration: none; margin-top: 12px;
+      transition: opacity var(--transition);
+    }
+    .guide-link:hover { opacity: 0.85; }
+    .guide-step.important {
+      background: linear-gradient(135deg, rgba(239,68,68,0.07), rgba(245,158,11,0.07));
+      border: 1.5px solid var(--accent);
+      border-radius: 12px;
+      padding: 10px 14px 10px 10px;
+    }
+    .guide-step.important .guide-step-num {
+      background: var(--gradient);
+      box-shadow: 0 2px 8px rgba(194,30,120,0.35);
+    }
+    .guide-step.important .guide-step-text { font-weight: 600; }
+    .guide-step-important-label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+      color: #ef4444; text-transform: uppercase; margin-bottom: 2px;
+    }
+    .guide-shortcut {
+      display: flex; align-items: flex-start; gap: 12px;
+      background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(239,68,68,0.08));
+      border: 1.5px solid #f59e0b;
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 18px;
+    }
+    .guide-shortcut-icon { font-size: 20px; flex-shrink: 0; line-height: 1.4; }
+    .guide-shortcut-body { font-size: 13px; color: var(--text); line-height: 1.6; }
+    .guide-shortcut-body strong { color: #d97706; }
+    .guide-shortcut-body a { color: var(--accent); font-weight: 700; text-decoration: underline; }
+    .guide-shortcut-body a:hover { opacity: 0.8; }
+
+    /* ===================== DASHBOARD ===================== */
+    .back-btn {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 50px;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 24px;
+      transition: background var(--transition);
+    }
+    .back-btn:hover { background: var(--bg3); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .stat-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124,58,237,0.2); }
+    .stat-card .num { font-size: 32px; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-card .label { font-size: 13px; color: var(--text2); margin-top: 4px; font-weight: 500; }
+    .stat-card .icon { font-size: 24px; margin-bottom: 6px; }
+
+    /* ===================== TABS ===================== */
+    .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      border-radius: 50px;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .tab-btn.active { background: var(--gradient); color: white; border-color: transparent; }
+    .tab-badge {
+      background: rgba(255,255,255,0.25);
+      border-radius: 50px;
+      padding: 1px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      min-width: 22px;
+      text-align: center;
+    }
+    .tab-btn:not(.active) .tab-badge { background: var(--bg3); color: var(--text3); }
+    .tab-btn.active .tab-badge { background: rgba(255,255,255,0.3); color: white; }
+
+    /* ===================== TOOLBAR ===================== */
+    .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 9px 16px 9px 40px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 12px center;
+    }
+    [dir="rtl"] .search-box { background-position: calc(100% - 12px) center; padding: 9px 40px 9px 16px; }
+    .search-box:focus { border-color: var(--accent); }
+    .search-box::placeholder { color: var(--text3); }
+    .filter-select {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 9px 16px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+      transition: border-color var(--transition);
+    }
+    .filter-select:focus { border-color: var(--accent); }
+    .auto-cat-btn, .select-all-btn {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 50px;
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .auto-cat-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .select-all-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ===================== USER GRID ===================== */
+    .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    .user-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+      transition: transform var(--transition), box-shadow var(--transition);
+      position: relative;
+    }
+    .user-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+    .user-card.in-queue { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .user-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--gradient);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; color: white;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name {
+      font-size: 14px; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .user-name a { color: var(--text); text-decoration: none; }
+    .user-name a:hover { color: var(--accent); }
+    .user-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+    .cat-badge {
+      font-size: 11px; font-weight: 700;
+      border-radius: 50px; padding: 2px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity var(--transition);
+    }
+    .cat-badge:hover { opacity: 0.75; }
+    .user-actions { display: flex; gap: 6px; flex-direction: column; flex-shrink: 0; }
+    .action-btn {
+      border: none;
+      border-radius: 50px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity var(--transition), transform var(--transition);
+      white-space: nowrap;
+    }
+    .action-btn:hover { opacity: 0.82; transform: scale(1.04); }
+    .btn-queue { background: #f59e0b; color: white; }
+    .btn-unqueue { background: #6b7280; color: white; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-instagram { background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); color: white; }
+
+    /* Checkbox selection */
+    .user-check { position: absolute; top: 10px; }
+    [dir="rtl"] .user-check { right: 10px; }
+    [dir="ltr"] .user-check { left: 10px; }
+    .user-check input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+    .user-card.selectable { padding-top: 32px; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+    .empty-state svg { width: 56px; height: 56px; margin-bottom: 16px; opacity: 0.4; }
+    .empty-state h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--text2); }
+
+    /* ===================== UNFOLLOW QUEUE ===================== */
+    .queue-toolbar {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow);
+    }
+    .queue-count { font-size: 15px; font-weight: 700; }
+    .queue-count span { color: var(--accent); }
+    .queue-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-secondary {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 50px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-primary {
+      background: var(--gradient);
+      border: none;
+      color: white;
+      border-radius: 50px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity var(--transition);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+
+    /* ===================== CATEGORY PANEL ===================== */
+    .category-panel { max-width: 680px; }
+    .cat-section-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+    .cat-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .cat-chip {
+      display: flex; align-items: center; gap: 6px;
+      border-radius: 50px; padding: 6px 14px;
+      font-size: 13px; font-weight: 700;
+      border: none; cursor: default;
+    }
+    .cat-chip .cat-delete {
+      background: none; border: none; cursor: pointer;
+      color: inherit; opacity: 0.6; font-size: 16px; line-height: 1;
+      padding: 0 0 0 4px;
+      transition: opacity var(--transition);
+    }
+    .cat-chip .cat-delete:hover { opacity: 1; }
+    .cat-add-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .cat-name-input {
+      flex: 1; min-width: 160px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 50px; padding: 9px 16px;
+      font-size: 14px; color: var(--text); outline: none;
+    }
+    .cat-name-input:focus { border-color: var(--accent); }
+    .color-picker { width: 42px; height: 42px; border-radius: 50px; border: 2px solid var(--border); cursor: pointer; padding: 2px; }
+
+    /* ===================== CATEGORY PICKER DROPDOWN ===================== */
+    .cat-picker {
+      position: absolute;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-lg);
+      z-index: 200;
+      min-width: 180px;
+      overflow: hidden;
+    }
+    .cat-picker-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+      transition: background var(--transition);
+    }
+    .cat-picker-item:hover { background: var(--bg3); }
+    .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ===================== MODAL ===================== */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+      opacity: 0; pointer-events: none;
+      transition: opacity var(--transition);
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--bg2);
+      border-radius: var(--radius);
+      max-width: 520px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(20px);
+      transition: transform var(--transition);
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px 0;
+      margin-bottom: 16px;
+    }
+    .modal-header h2 { font-size: 18px; font-weight: 800; }
+    .modal-close {
+      background: var(--bg3); border: none; border-radius: 50%;
+      width: 32px; height: 32px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text2); font-size: 18px;
+      transition: background var(--transition);
+    }
+    .modal-close:hover { background: var(--border); }
+    .modal-body { padding: 0 24px 24px; }
+
+    /* ===================== PAGINATION ===================== */
+    .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 20px; flex-wrap: wrap; }
+    .page-btn {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 6px 12px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all var(--transition); color: var(--text2);
+    }
+    .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .page-btn.active { background: var(--gradient); color: white; border-color: transparent; }
+
+    /* ===================== MISC ===================== */
+    .section-info { background: var(--bg3); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--text2); }
+    .bulk-bar {
+      background: var(--accent);
+      color: white;
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .bulk-bar.visible { display: flex; }
+    .bulk-bar-text { font-size: 14px; font-weight: 700; }
+    .bulk-bar-actions { display: flex; gap: 8px; }
+    .bulk-action-btn {
+      background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
+      color: white; border-radius: 50px; padding: 6px 14px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: background var(--transition);
+    }
+    .bulk-action-btn:hover { background: rgba(255,255,255,0.35); }
+
+    /* ===================== LANDING PAGE ===================== */
+    .landing-hero {
+      background: var(--gradient);
+      border-radius: var(--radius);
+      padding: 52px 24px 44px;
+      text-align: center;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .landing-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .landing-hero-content { position: relative; z-index: 1; }
+    .landing-ig-icon {
+      width: 64px; height: 64px;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      backdrop-filter: blur(4px);
+    }
+    .landing-ig-icon svg { width: 36px; height: 36px; color: white; }
+    .landing-hero h1 { font-size: 34px; font-weight: 800; color: white; margin-bottom: 12px; line-height: 1.2; }
+    .landing-hero p { color: rgba(255,255,255,0.85); font-size: 16px; max-width: 500px; margin: 0 auto 28px; }
+    .landing-hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .cta-primary {
+      background: white;
+      color: var(--accent);
+      border: none;
+      border-radius: 50px;
+      padding: 13px 28px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform var(--transition), box-shadow var(--transition);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+    .cta-secondary {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 50px;
+      padding: 11px 22px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background var(--transition);
+      backdrop-filter: blur(4px);
+    }
+    .cta-secondary:hover { background: rgba(255,255,255,0.25); }
+
+    .features-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+    .feature-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 18px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .feature-icon { font-size: 28px; margin-bottom: 10px; }
+    .feature-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .feature-card p { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+    /* Upload method toggle */
+    .upload-method-tabs {
+      display: flex; gap: 0;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 4px;
+      max-width: 360px;
+      margin: 0 auto 20px;
+    }
+    .method-tab {
+      flex: 1; border: none; border-radius: 50px;
+      padding: 9px 16px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all var(--transition);
+      background: none; color: var(--text2);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .method-tab.active { background: var(--bg2); color: var(--accent); box-shadow: var(--shadow); }
+
+    /* Two-JSON upload layout */
+    .json-upload-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 560px; margin: 0 auto 16px; }
+    .json-drop-box {
+      background: var(--bg2); border: 2px dashed var(--border);
+      border-radius: var(--radius); padding: 24px 16px;
+      text-align: center; cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .json-drop-box:hover, .json-drop-box.drag-over { border-color: var(--accent); background: var(--bg3); }
+    .json-drop-box.loaded { border-color: #10b981; border-style: solid; background: rgba(16,185,129,0.05); }
+    .json-drop-box.loaded .jdb-icon { color: #10b981; }
+    .jdb-icon { color: var(--accent); margin-bottom: 8px; }
+    .jdb-icon svg { width: 28px; height: 28px; }
+    .jdb-label { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .jdb-hint { font-size: 11px; color: var(--text3); }
+    .jdb-loaded { font-size: 12px; color: #10b981; font-weight: 700; margin-top: 6px; }
+
+    .json-start-btn {
+      display: block; max-width: 560px; margin: 0 auto 16px;
+      width: 100%;
+      background: var(--gradient); color: white; border: none;
+      border-radius: 50px; padding: 13px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: opacity var(--transition);
+      opacity: 0.4; pointer-events: none;
+    }
+    .json-start-btn.ready { opacity: 1; pointer-events: all; }
+
+    /* Reset confirm modal */
+    .reset-modal-content { text-align: center; padding: 8px 0 4px; }
+    .reset-modal-content p { color: var(--text2); font-size: 15px; margin-bottom: 20px; }
+    .reset-modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+    @media (max-width: 600px) {
+      .header { padding: 0 12px; }
+      .header-logo span { display: none; }
+      .main { padding: 16px 10px 60px; }
+      .landing-hero { padding: 36px 16px 32px; }
+      .landing-hero h1 { font-size: 24px; }
+      .features-row { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .user-grid { grid-template-columns: 1fr; }
+      .tabs { gap: 4px; }
+      .tab-btn { padding: 7px 12px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+      <circle cx="12" cy="12" r="4"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+    </svg>
+    <span data-t="appName">Instagram Manager</span>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" id="guide-btn" onclick="openGuide()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+      <span data-t="guide">מדריך</span>
+    </button>
+    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()">
+      <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span id="theme-label" data-t="darkMode">מצב כהה</span>
+    </button>
+    <button class="icon-btn" id="lang-btn" onclick="toggleLang()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span id="lang-label">EN</span>
+    </button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- UPLOAD SECTION / LANDING PAGE -->
+  <div id="upload-section">
+
+    <!-- Hero Banner -->
+    <div class="landing-hero">
+      <div class="landing-hero-content">
+        <div class="landing-ig-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+            <circle cx="12" cy="12" r="4"/>
+            <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <h1 data-t="heroTitle">ניהול עוקבים באינסטגרם</h1>
+        <p data-t="heroDesc">העלה את קובץ הנתונים שלך מאינסטגרם וקבל תמונה מלאה על העוקבים שלך</p>
+        <div class="landing-hero-cta">
+          <button class="cta-primary" onclick="document.getElementById('file-input').click(); switchUploadMode('zip')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span data-t="chooseFile">בחר קובץ ZIP</span>
+          </button>
+          <button class="cta-secondary" onclick="toggleGuideCard(); document.getElementById('guide-card-section').scrollIntoView({behavior:'smooth'})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+            <span data-t="howToDownloadShort">איך להוריד?</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature Cards -->
+    <div class="features-row" id="features-row"></div>
+
+    <!-- Upload method toggle -->
+    <div class="upload-method-tabs">
+      <button class="method-tab active" id="tab-zip" onclick="switchUploadMode('zip')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span data-t="modeZip">קובץ ZIP</span>
+      </button>
+      <button class="method-tab" id="tab-json" onclick="switchUploadMode('json')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <span data-t="modeJson">שני קבצי JSON</span>
+      </button>
+    </div>
+
+    <!-- ZIP Drop Zone -->
+    <div id="zip-upload-area">
+      <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <h2 data-t="uploadTitle">גרור לכאן את קובץ ה-ZIP</h2>
+        <p data-t="uploadDesc">או לחץ לבחירת קובץ — קובץ ה-ZIP שהורדת מאינסטגרם</p>
+      </div>
+      <input type="file" id="file-input" accept=".zip" onchange="handleFileInput(event)" />
+    </div>
+
+    <!-- JSON Two-File Upload Area -->
+    <div id="json-upload-area" style="display:none">
+      <div class="json-upload-row">
+        <!-- Followers JSON -->
+        <div class="json-drop-box" id="jbox-followers"
+          onclick="document.getElementById('json-followers-input').click()"
+          ondragover="handleJsonDragOver(event,'followers')"
+          ondragleave="handleJsonDragLeave('followers')"
+          ondrop="handleJsonDrop(event,'followers')">
+          <div class="jdb-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="jdb-label" data-t="jsonFollowersLabel">followers_1.json</div>
+          <div class="jdb-hint" data-t="jsonFollowersHint">מי עוקב אחריך</div>
+          <div class="jdb-loaded" id="jloaded-followers" style="display:none">✓ <span id="jloaded-followers-name"></span></div>
+        </div>
+        <!-- Following JSON -->
+        <div class="json-drop-box" id="jbox-following"
+          onclick="document.getElementById('json-following-input').click()"
+          ondragover="handleJsonDragOver(event,'following')"
+          ondragleave="handleJsonDragLeave('following')"
+          ondrop="handleJsonDrop(event,'following')">
+          <div class="jdb-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          </div>
+          <div class="jdb-label" data-t="jsonFollowingLabel">following.json</div>
+          <div class="jdb-hint" data-t="jsonFollowingHint">אחרי מי אתה עוקב</div>
+          <div class="jdb-loaded" id="jloaded-following" style="display:none">✓ <span id="jloaded-following-name"></span></div>
+        </div>
+      </div>
+      <button class="json-start-btn" id="json-start-btn" onclick="processJsonFiles()" data-t="jsonStartBtn">טען נתונים</button>
+      <input type="file" id="json-followers-input" accept=".json" onchange="handleJsonInput(event,'followers')" style="display:none" />
+      <input type="file" id="json-following-input" accept=".json" onchange="handleJsonInput(event,'following')" style="display:none" />
+    </div>
+
+    <div class="upload-error" id="upload-error"></div>
+    <div class="upload-loading" id="upload-loading">
+      <div class="spinner"></div>
+      <div data-t="parsing">מנתח נתונים...</div>
+    </div>
+
+    <!-- Guide Card -->
+    <div class="guide-card" id="guide-card-section">
+      <div class="guide-card-header" id="guide-card-header" onclick="toggleGuideCard()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+        <h3 data-t="howToDownload">איך להוריד את הנתונים מאינסטגרם?</h3>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="guide-steps" id="guide-steps-inline">
+        <div id="guide-steps-content"></div>
+        <a href="https://accountscenter.instagram.com/info_and_permissions/dyi/" target="_blank" rel="noopener" class="guide-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          <span data-t="goToInstagram">פתח הגדרות אינסטגרם</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD SECTION -->
+  <div id="dashboard-section">
+    <!-- Dashboard header bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+      <div id="dashboard-file-info" style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span id="dashboard-file-name"></span>
+      </div>
+      <button class="back-btn" onclick="confirmReset()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+        <span data-t="backUpload">העלה קובץ חדש</span>
+      </button>
+    </div>
+
+    <!-- Totals summary -->
+    <div id="stats-summary" style="display:flex;align-items:center;gap:16px;margin-bottom:14px;font-size:14px;color:var(--text2);flex-wrap:wrap;"></div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="tabs"></div>
+
+    <!-- Tab content -->
+    <div id="tab-content"></div>
+  </div>
+
+  <!-- RESET CONFIRM MODAL -->
+  <div class="modal-overlay" id="reset-modal-overlay" onclick="closeResetModal(event)">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <h2 data-t="resetTitle">איפוס נתונים</h2>
+        <button class="modal-close" onclick="closeResetModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="reset-modal-content">
+          <p data-t="resetDesc">כל הנתונים, הקטגוריות ותור ההורדה יימחקו. להמשיך?</p>
+          <div class="reset-modal-actions">
+            <button class="btn-primary" onclick="resetApp()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+              <span data-t="resetConfirm">כן, אפס</span>
+            </button>
+            <button class="btn-secondary" onclick="closeResetModal()" data-t="cancel">ביטול</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- GUIDE MODAL -->
+<div class="modal-overlay" id="guide-modal-overlay" onclick="closeGuide(event)">
+  <div class="modal" id="guide-modal">
+    <div class="modal-header">
+      <h2 data-t="guideTitle">מדריך להורדת נתונים</h2>
+      <button class="modal-close" onclick="closeGuide()">&times;</button>
+    </div>
+    <div class="modal-body" id="guide-modal-body"></div>
+  </div>
+</div>
+
+<!-- CATEGORY PICKER (floating) -->
+<div class="cat-picker" id="cat-picker" style="display:none"></div>
+
+<script>
+// ===================================================
+// STATE
+// ===================================================
+const state = {
+  followers: new Set(),
+  following: new Set(),
+  userCategories: {},    // { username: categoryId }
+  customCategories: [],  // { id, name, color }
+  unfollowQueue: new Set(),
+  currentTab: 'not-following',
+  searchQuery: '',
+  catFilter: 'all',
+  currentPage: 1,
+  pageSize: 30,
+  lang: 'he',
+  theme: 'light',
+  uploadMode: 'zip',
+  selectMode: false,
+  selectedUsers: new Set(),
+};
+
+const BUILTIN_CATS = [
+  { id: 'private',  name_he: 'אדם פרטי',   name_en: 'Private',   color: '#3b82f6', bg: '#eff6ff' },
+  { id: 'business', name_he: 'עסק/מותג',    name_en: 'Business',  color: '#8b5cf6', bg: '#f5f3ff' },
+  { id: 'humor',    name_he: 'הומור',        name_en: 'Humor',     color: '#f59e0b', bg: '#fffbeb' },
+  { id: 'food',     name_he: 'אוכל',         name_en: 'Food',      color: '#ef4444', bg: '#fef2f2' },
+  { id: 'sports',   name_he: 'ספורט',        name_en: 'Sports',    color: '#10b981', bg: '#ecfdf5' },
+  { id: 'music',    name_he: 'מוזיקה',       name_en: 'Music',     color: '#ec4899', bg: '#fdf4ff' },
+  { id: 'travel',   name_he: 'טיולים',       name_en: 'Travel',    color: '#06b6d4', bg: '#ecfeff' },
+  { id: 'news',     name_he: 'חדשות/מדיה',   name_en: 'News',      color: '#64748b', bg: '#f8fafc' },
+];
+
+// ===================================================
+// TRANSLATIONS
+// ===================================================
+const T = {
+  he: {
+    appName: 'Instagram Manager',
+    guide: 'מדריך',
+    darkMode: 'מצב כהה',
+    lightMode: 'מצב בהיר',
+    heroTitle: 'ניהול עוקבים באינסטגרם',
+    heroDesc: 'העלה את קובץ הנתונים שלך מאינסטגרם וקבל תמונה מלאה על העוקבים שלך',
+    uploadTitle: 'גרור לכאן את קובץ ה-ZIP',
+    uploadDesc: 'או לחץ לבחירת קובץ — קובץ ה-ZIP שהורדת מאינסטגרם',
+    chooseFile: 'בחר קובץ ZIP',
+    parsing: 'מנתח נתונים...',
+    howToDownload: 'איך להוריד את הנתונים מאינסטגרם?',
+    goToInstagram: 'פתח הגדרות אינסטגרם',
+    guideTitle: 'מדריך להורדת נתונים',
+    backUpload: 'העלה קובץ חדש',
+    tabNotFollowing: 'לא עוקבים אחרי בחזרה',
+    tabMutual: 'עוקבים הדדיים',
+    tabFollowMe: 'אני לא עוקב בחזרה',
+    tabQueue: 'רשימת הסרת עוקבים',
+    tabCategories: 'קטגוריות',
+    statNotFollowing: 'לא עוקבים אחרי בחזרה',
+    statMutual: 'עוקבים הדדיים',
+    statFollowMe: 'אני לא עוקב בחזרה',
+    statQueue: 'רשימת הסרת עוקבים',
+    searchPlaceholder: 'חפש משתמש...',
+    filterAll: 'כל הקטגוריות',
+    filterNone: 'ללא קטגוריה',
+    autoCategorize: '✨ סיווג אוטומטי',
+    addToQueue: 'הורד עוקב',
+    removeFromQueue: 'הסר מרשימה',
+    openInstagram: 'פתח פרופיל',
+    returnToList: 'בטל הורדת עוקב',
+    noResults: 'לא נמצאו תוצאות',
+    noResultsDesc: 'נסה לשנות את מונחי החיפוש',
+    emptyQueue: 'הרשימה ריקה',
+    emptyQueueDesc: 'העבר משתמשים לכאן מהלשונית "לא עוקבים בחזרה"',
+    queueCount: 'משתמשים ברשימה',
+    clearQueue: 'נקה רשימה',
+    selectAll: 'בחר הכל',
+    deselectAll: 'בטל הכל',
+    selectedCount: 'נבחרו',
+    addSelectedToQueue: 'הורד עוקבים',
+    removeSelected: 'הסר מרשימה',
+    catManageTitle: 'ניהול קטגוריות',
+    catBuiltin: 'קטגוריות מובנות',
+    catCustom: 'קטגוריות מותאמות אישית',
+    catAddPlaceholder: 'שם קטגוריה...',
+    catAddBtn: 'הוסף',
+    uncat: 'ללא קטגוריה',
+    catPickTitle: 'בחר קטגוריה',
+    autoCatDone: 'סיווג אוטומטי הושלם',
+    autoCatResult: 'סווגו',
+    accounts: 'חשבונות',
+    sectionInfoNotFollowing: 'אלה המשתמשים שאתה עוקב אחריהם אך הם לא עוקבים אחריך בחזרה.',
+    sectionInfoMutual: 'עוקבים הדדיים — שניכם עוקבים אחד אחרי השני.',
+    sectionInfoFollowMe: 'אלה עוקבים אחריך, אך אתה לא עוקב אחריהם.',
+    sectionInfoQueue: 'רשימת המשתמשים שתרצה להוריד מהם עוקב. לחץ "פתח פרופיל" לפתוח את הפרופיל שלהם.',
+    totalFollowing: 'עוקב',
+    totalFollowers: 'עוקבים',
+    modeZip: 'קובץ ZIP',
+    modeJson: 'שני קבצי JSON',
+    jsonFollowersLabel: 'followers_1.json',
+    jsonFollowersHint: 'מי עוקב אחריך',
+    jsonFollowingLabel: 'following.json',
+    jsonFollowingHint: 'אחרי מי אתה עוקב',
+    jsonStartBtn: 'טען נתונים',
+    howToDownloadShort: 'איך להוריד?',
+    resetTitle: 'איפוס נתונים',
+    resetDesc: 'כל הנתונים, הקטגוריות ותור ההורדה יימחקו. להמשיך?',
+    resetConfirm: 'כן, אפס',
+    cancel: 'ביטול',
+    loadedFile: 'קובץ נטען',
+    featFollowersTitle: 'מעקב עוקבים',
+    featFollowersDesc: 'גלה מי לא עוקב בחזרה, מי עוקב הדדי ומי עוקב אחריך',
+    featQueueTitle: 'תור הורדת עוקבים',
+    featQueueDesc: 'סמן משתמשים שתרצה להוריד מהם ונהל רשימה מסודרת',
+    featCatsTitle: 'קטגוריות חכמות',
+    featCatsDesc: 'סווג אוטומטי לפי שם משתמש — אנשים פרטיים, עסקים, הומור ועוד',
+    guideSteps: [
+      { text: 'פתח את אפליקציית <strong>אינסטגרם</strong> בטלפון שלך' },
+      { text: 'לחץ על <strong>הפרופיל שלך</strong> — האייקון בפינה הימנית התחתונה' },
+      { text: 'לחץ על <strong>☰</strong> (שלושת הקווים) בפינה הימנית <strong>העליונה</strong>' },
+      { text: 'לחץ על <strong>מרכז החשבונות</strong>' },
+      { text: 'לחץ על <strong>המידע וההרשאות שלך</strong>' },
+      { shortcut: true, url: 'https://accountscenter.instagram.com/info_and_permissions/', label: 'קיצור דרך', desc: 'לחץ כאן כדי לדלג ישירות לשלב הבא — תגיע ישירות לעמוד המידע וההרשאות ותחסוך את שלבים 1–5' },
+      { text: 'לחץ על <strong>ייצא או הורד את המידע שלך</strong>' },
+      { text: 'לחץ על <strong>הורד או העבר מידע</strong>, ובחר את <strong>חשבון האינסטגרם</strong> שלך' },
+      { text: 'לחץ על <strong>ייצא למכשיר</strong>' },
+      { important: true, text: 'בשדה <strong>טווח תאריכים</strong> — בחר <strong>כל הזמנים</strong>' },
+      { important: true, text: 'בשדה <strong>פורמט</strong> — בחר <strong>JSON</strong>' },
+      { important: true, text: 'לחץ על <strong>התאמה אישית של המידע</strong> — <strong>בטל את הסימון מכל הקטגוריות</strong>, ותחת קטגוריית <strong>Connections</strong> סמן אך ורק את <strong>✓ Followers and Following</strong>' },
+      { text: 'לחץ על <strong>צור קובץ</strong> — אינסטגרם תשלח לך <strong>אימייל</strong> עם קישור להורדה תוך מספר דקות' },
+      { text: 'פתח את האימייל, הורד את <strong>קובץ ה-ZIP</strong>, חזור לכאן והעלה אותו לכלי' },
+    ],
+  },
+  en: {
+    appName: 'Instagram Manager',
+    guide: 'Guide',
+    darkMode: 'Dark Mode',
+    lightMode: 'Light Mode',
+    heroTitle: 'Instagram Follower Manager',
+    heroDesc: 'Upload your Instagram data export and get a full picture of your followers',
+    uploadTitle: 'Drag & drop your ZIP file here',
+    uploadDesc: 'Or click to browse — the ZIP file you downloaded from Instagram',
+    chooseFile: 'Choose ZIP File',
+    parsing: 'Parsing data...',
+    howToDownload: 'How to download your Instagram data?',
+    goToInstagram: 'Open Instagram Settings',
+    guideTitle: 'Data Download Guide',
+    backUpload: 'Upload New File',
+    tabNotFollowing: 'Not Following Me Back',
+    tabMutual: 'Mutual Followers',
+    tabFollowMe: "Don't Follow Back",
+    tabQueue: 'Remove Followers List',
+    tabCategories: 'Categories',
+    statNotFollowing: 'Not Following Me Back',
+    statMutual: 'Mutual',
+    statFollowMe: "Don't Follow Back",
+    statQueue: 'Remove Followers',
+    searchPlaceholder: 'Search user...',
+    filterAll: 'All Categories',
+    filterNone: 'No Category',
+    autoCategorize: '✨ Auto-Categorize',
+    addToQueue: 'Remove Follower',
+    removeFromQueue: 'Remove from List',
+    openInstagram: 'Open Profile',
+    returnToList: 'Cancel Removal',
+    noResults: 'No results found',
+    noResultsDesc: 'Try changing your search terms',
+    emptyQueue: 'List is empty',
+    emptyQueueDesc: 'Move users here from the "Not Following Back" tab',
+    queueCount: 'users in list',
+    clearQueue: 'Clear List',
+    selectAll: 'Select All',
+    deselectAll: 'Deselect All',
+    selectedCount: 'selected',
+    addSelectedToQueue: 'Remove Followers',
+    removeSelected: 'Remove from List',
+    catManageTitle: 'Manage Categories',
+    catBuiltin: 'Built-in Categories',
+    catCustom: 'Custom Categories',
+    catAddPlaceholder: 'Category name...',
+    catAddBtn: 'Add',
+    uncat: 'Uncategorized',
+    catPickTitle: 'Choose Category',
+    autoCatDone: 'Auto-categorization complete',
+    autoCatResult: 'categorized',
+    accounts: 'accounts',
+    sectionInfoNotFollowing: 'These are users you follow who do not follow you back.',
+    sectionInfoMutual: 'Mutual followers — you both follow each other.',
+    sectionInfoFollowMe: 'These users follow you, but you don\'t follow them back.',
+    sectionInfoQueue: 'Your unfollow queue. Click "Open Profile" to visit their Instagram profile.',
+    totalFollowing: 'following',
+    totalFollowers: 'followers',
+    modeZip: 'ZIP File',
+    modeJson: 'Two JSON Files',
+    jsonFollowersLabel: 'followers_1.json',
+    jsonFollowersHint: 'Who follows you',
+    jsonFollowingLabel: 'following.json',
+    jsonFollowingHint: 'Who you follow',
+    jsonStartBtn: 'Load Data',
+    howToDownloadShort: 'How to download?',
+    resetTitle: 'Reset Data',
+    resetDesc: 'All data, categories and unfollow queue will be cleared. Continue?',
+    resetConfirm: 'Yes, Reset',
+    cancel: 'Cancel',
+    loadedFile: 'Loaded file',
+    featFollowersTitle: 'Follower Tracking',
+    featFollowersDesc: 'Discover who doesn\'t follow back, mutual followers, and who follows you',
+    featQueueTitle: 'Unfollow Queue',
+    featQueueDesc: 'Mark users you want to unfollow and manage an organized list',
+    featCatsTitle: 'Smart Categories',
+    featCatsDesc: 'Auto-categorize by username — private people, businesses, humor and more',
+    guideSteps: [
+      { text: 'Open the <strong>Instagram</strong> app on your phone' },
+      { text: 'Tap your <strong>Profile</strong> — the icon in the bottom right corner' },
+      { text: 'Tap <strong>☰</strong> (the three lines) in the top <strong>right</strong> corner' },
+      { text: 'Tap <strong>Accounts Center</strong>' },
+      { text: 'Tap <strong>Your information and permissions</strong>' },
+      { shortcut: true, url: 'https://accountscenter.instagram.com/info_and_permissions/', label: 'Shortcut', desc: 'Tap here to jump directly to the next step — skips steps 1–5 and lands you straight on the Your information and permissions page' },
+      { text: 'Tap <strong>Download or transfer your information</strong>' },
+      { text: 'Tap <strong>Download or transfer information</strong>, then select your <strong>Instagram account</strong>' },
+      { text: 'Tap <strong>Download to device</strong>' },
+      { important: true, text: 'Under <strong>Date range</strong> — select <strong>All time</strong>' },
+      { important: true, text: 'Under <strong>Format</strong> — select <strong>JSON</strong>' },
+      { important: true, text: 'Tap <strong>Customize your information</strong> — <strong>uncheck everything</strong>, then under the <strong>Connections</strong> category check <strong>✓ Followers and Following</strong> only' },
+      { text: 'Tap <strong>Create files</strong> — Instagram will send you an <strong>email</strong> with a download link within a few minutes' },
+      { text: 'Open the email, download the <strong>ZIP file</strong>, come back here and upload it to the tool' },
+    ],
+  },
+};
+
+function t(key) { return T[state.lang][key] || key; }
+
+// ===================================================
+// THEME & LANG
+// ===================================================
+function toggleTheme() {
+  state.theme = state.theme === 'light' ? 'dark' : 'light';
+  applyTheme();
+  localStorage.setItem('igm_theme', state.theme);
+}
+
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', state.theme);
+  const isDark = state.theme === 'dark';
+  document.getElementById('theme-icon-sun').style.display = isDark ? 'none' : '';
+  document.getElementById('theme-icon-moon').style.display = isDark ? '' : 'none';
+  document.getElementById('theme-label').textContent = isDark ? t('lightMode') : t('darkMode');
+}
+
+function toggleLang() {
+  state.lang = state.lang === 'he' ? 'en' : 'he';
+  applyLang();
+  localStorage.setItem('igm_lang', state.lang);
+  renderAll();
+}
+
+function applyLang() {
+  const isHe = state.lang === 'he';
+  document.documentElement.lang = state.lang;
+  document.documentElement.dir = isHe ? 'rtl' : 'ltr';
+  document.getElementById('lang-label').textContent = isHe ? 'EN' : 'עב';
+  document.getElementById('theme-label').textContent = state.theme === 'dark' ? t('lightMode') : t('darkMode');
+}
+
+function updateStaticText() {
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const key = el.getAttribute('data-t');
+    if (T[state.lang][key]) el.textContent = T[state.lang][key];
+  });
+  renderGuideStepsInline();
+  renderFeatures();
+  if (state.followers.size > 0) renderDashboard();
+}
+
+function renderAll() {
+  applyLang();
+  updateStaticText();
+}
+
+// ===================================================
+// GUIDE
+// ===================================================
+function openGuide() {
+  const overlay = document.getElementById('guide-modal-overlay');
+  const body = document.getElementById('guide-modal-body');
+  body.innerHTML = buildGuideSteps();
+  overlay.classList.add('open');
+}
+
+function closeGuide(e) {
+  if (!e || e.target === document.getElementById('guide-modal-overlay')) {
+    document.getElementById('guide-modal-overlay').classList.remove('open');
+  }
+}
+
+function buildGuideSteps() {
+  const steps = T[state.lang].guideSteps;
+  let num = 0;
+  let html = steps.map(s => {
+    if (s.shortcut) return `
+      <div class="guide-shortcut">
+        <div class="guide-shortcut-icon">⚡</div>
+        <div class="guide-shortcut-body">
+          <strong>${s.label}:</strong>
+          <a href="${s.url}" target="_blank" rel="noopener">${s.url.replace('https://', '')}</a><br>
+          ${s.desc}
+        </div>
+      </div>`;
+    num++;
+    return `
+      <div class="guide-step${s.important ? ' important' : ''}">
+        <div class="guide-step-num">${num}</div>
+        <div class="guide-step-text">
+          ${s.important ? `<div class="guide-step-important-label">⚠ ${state.lang === 'he' ? 'חשוב' : 'IMPORTANT'}</div>` : ''}
+          ${s.text}
+        </div>
+      </div>`;
+  }).join('');
+  return html;
+}
+
+function renderGuideStepsInline() {
+  const el = document.getElementById('guide-steps-content');
+  if (el) {
+    const steps = T[state.lang].guideSteps;
+    let num = 0;
+    el.innerHTML = steps.map(s => {
+      if (s.shortcut) return `
+        <div class="guide-shortcut">
+          <div class="guide-shortcut-icon">⚡</div>
+          <div class="guide-shortcut-body">
+            <strong>${s.label}:</strong>
+            <a href="${s.url}" target="_blank" rel="noopener">${s.url.replace('https://', '')}</a><br>
+            ${s.desc}
+          </div>
+        </div>`;
+      num++;
+      return `
+        <div class="guide-step">
+          <div class="guide-step-num">${num}</div>
+          <div class="guide-step-text">${s.text}</div>
+        </div>`;
+    }).join('');
+  }
+}
+
+function toggleGuideCard() {
+  const header = document.getElementById('guide-card-header');
+  const steps = document.getElementById('guide-steps-inline');
+  header.classList.toggle('open');
+  steps.classList.toggle('open');
+  if (steps.classList.contains('open')) renderGuideStepsInline();
+}
+
+// ===================================================
+// UPLOAD MODE TOGGLE
+// ===================================================
+function switchUploadMode(mode) {
+  state.uploadMode = mode;
+  document.getElementById('tab-zip').classList.toggle('active', mode === 'zip');
+  document.getElementById('tab-json').classList.toggle('active', mode === 'json');
+  document.getElementById('zip-upload-area').style.display = mode === 'zip' ? '' : 'none';
+  document.getElementById('json-upload-area').style.display = mode === 'json' ? '' : 'none';
+  hideError();
+}
+
+// ===================================================
+// FILE UPLOAD & PARSING
+// ===================================================
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('drag-over');
+}
+function handleDragLeave() {
+  document.getElementById('drop-zone').classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileInput(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function showError(msg) {
+  const el = document.getElementById('upload-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('upload-loading').style.display = 'none';
+}
+
+function hideError() {
+  document.getElementById('upload-error').style.display = 'none';
+}
+
+// ===================================================
+// TWO-JSON FILE MODE
+// ===================================================
+const jsonFiles = { followers: null, following: null };
+
+function handleJsonDragOver(e, type) {
+  e.preventDefault();
+  document.getElementById('jbox-' + type).classList.add('drag-over');
+}
+function handleJsonDragLeave(type) {
+  document.getElementById('jbox-' + type).classList.remove('drag-over');
+}
+function handleJsonDrop(e, type) {
+  e.preventDefault();
+  handleJsonDragLeave(type);
+  const file = e.dataTransfer.files[0];
+  if (file) loadJsonFile(file, type);
+}
+function handleJsonInput(e, type) {
+  const file = e.target.files[0];
+  if (file) loadJsonFile(file, type);
+}
+
+function loadJsonFile(file, type) {
+  if (!file.name.endsWith('.json')) {
+    showError(state.lang === 'he' ? 'יש להעלות קובץ JSON בלבד' : 'Please upload a JSON file');
+    return;
+  }
+  jsonFiles[type] = file;
+  const box = document.getElementById('jbox-' + type);
+  box.classList.add('loaded');
+  box.classList.remove('drag-over');
+  document.getElementById('jloaded-' + type).style.display = '';
+  document.getElementById('jloaded-' + type + '-name').textContent = file.name;
+  // Enable start button when both loaded
+  const btn = document.getElementById('json-start-btn');
+  if (jsonFiles.followers && jsonFiles.following) btn.classList.add('ready');
+}
+
+async function processJsonFiles() {
+  if (!jsonFiles.followers || !jsonFiles.following) return;
+  hideError();
+  document.getElementById('upload-loading').style.display = 'block';
+  try {
+    const [followersData, followingData] = await Promise.all([
+      readJsonFile(jsonFiles.followers),
+      readJsonFile(jsonFiles.following),
+    ]);
+    const followers = extractUsersFromJson(followersData, 'followers');
+    const following = extractUsersFromJson(followingData, 'following');
+    if (followers.size === 0 && following.size === 0)
+      throw new Error(state.lang === 'he' ? 'לא נמצאו משתמשים בקבצים' : 'No users found in files');
+    finishLoad(followers, following, jsonFiles.followers.name + ' + ' + jsonFiles.following.name);
+  } catch (err) {
+    showError(err.message || (state.lang === 'he' ? 'שגיאה בניתוח הקבצים' : 'Error parsing files'));
+  }
+}
+
+function readJsonFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => { try { resolve(JSON.parse(e.target.result)); } catch(err) { reject(err); } };
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+function extractUsersFromJson(data, hint) {
+  // hint: 'followers' or 'following'
+  const set = new Set();
+  const isFollowing = hint === 'following';
+  // Try all known structures
+  const arr = data.relationships_following || data.relationships_followers
+    || (Array.isArray(data) ? data : null)
+    || data.following || data.followers || [];
+  parseUserList(arr).forEach(u => set.add(u));
+  // Strategy: try all object array values if above found nothing
+  if (set.size === 0 && !Array.isArray(data)) {
+    for (const val of Object.values(data)) {
+      if (Array.isArray(val)) parseUserList(val).forEach(u => set.add(u));
+    }
+  }
+  return set;
+}
+
+function finishLoad(followers, following, filename) {
+  state.followers = followers;
+  state.following = following;
+  state.unfollowQueue = new Set();
+  state.userCategories = {};
+  state.currentTab = 'not-following';
+  state.currentPage = 1;
+  state.searchQuery = '';
+  state.catFilter = 'all';
+  state.loadedFileName = filename;
+  document.getElementById('upload-loading').style.display = 'none';
+  document.getElementById('upload-section').style.display = 'none';
+  document.getElementById('dashboard-section').style.display = 'block';
+  const fnEl = document.getElementById('dashboard-file-name');
+  if (fnEl) fnEl.textContent = filename;
+  renderDashboard();
+}
+
+async function processFile(file) {
+  hideError();
+  if (!file.name.endsWith('.zip')) {
+    showError(state.lang === 'he' ? 'יש להעלות קובץ ZIP בלבד' : 'Please upload a ZIP file');
+    return;
+  }
+  document.getElementById('upload-loading').style.display = 'block';
+  try {
+    const zip = await JSZip.loadAsync(file);
+    const { followers, following } = await parseAllJsonFiles(zip);
+    if (followers.size === 0 && following.size === 0) {
+      // List files in ZIP to help user diagnose
+      const fileList = [];
+      zip.forEach((p) => { if (p.endsWith('.json')) fileList.push(p); });
+      const hint = fileList.length
+        ? (state.lang === 'he' ? `קבצי JSON שנמצאו: ${fileList.slice(0,5).join(', ')}` : `JSON files found: ${fileList.slice(0,5).join(', ')}`)
+        : '';
+      throw new Error((state.lang === 'he'
+        ? 'לא נמצאו קבצי עוקבים. וודא שהורדת בפורמט JSON מאינסטגרם.'
+        : 'No follower data found. Make sure you downloaded in JSON format from Instagram.') + (hint ? ' ' + hint : ''));
+    }
+    finishLoad(followers, following, file.name);
+  } catch (err) {
+    showError(err.message || (state.lang === 'he' ? 'שגיאה בניתוח הקובץ' : 'Error parsing file'));
+  }
+}
+
+function addUser(set, raw) {
+  if (!raw) return;
+  const u = String(raw).toLowerCase().trim();
+  if (u && !u.startsWith('__deleted__') && !u.includes(' ') && u.length < 60)
+    set.add(u);
+}
+
+function usernameFromHref(href) {
+  if (!href) return null;
+  // handles: instagram.com/username/ AND instagram.com/_u/username
+  const m = String(href).match(/instagram\.com\/_?u\/([^/?#\s]+)/i)
+         || String(href).match(/instagram\.com\/([^/?#\s]+)/i);
+  return (m && m[1] && m[1] !== 'p') ? m[1] : null;
+}
+
+function parseUserList(arr) {
+  const set = new Set();
+  if (!Array.isArray(arr)) return set;
+  for (const item of arr) {
+    // Format A (new 2024+): username is in item.title
+    if (item.title) addUser(set, item.title);
+
+    // Format B (old): string_list_data with value field
+    // Format C (new): string_list_data with href but no value
+    const sld = item.string_list_data;
+    if (Array.isArray(sld)) {
+      for (const entry of sld) {
+        if (entry.value) addUser(set, entry.value);
+        if (!entry.value && entry.href) addUser(set, usernameFromHref(entry.href));
+      }
+    }
+
+    // Format D: value directly on item
+    if (item.value && !item.title) addUser(set, item.value);
+
+    // Format E: href directly on item
+    if (item.href && !item.title) addUser(set, usernameFromHref(item.href));
+  }
+  return set;
+}
+
+function findStringListArrays(obj, depth) {
+  if (depth > 6) return [];
+  if (Array.isArray(obj)) {
+    if (obj.length > 0 && obj[0] && (obj[0].string_list_data || obj[0].href || obj[0].value))
+      return [obj];
+    return obj.flatMap(item => findStringListArrays(item, depth + 1));
+  }
+  if (obj && typeof obj === 'object') {
+    return Object.entries(obj).flatMap(([k, v]) => {
+      const arr = findStringListArrays(v, depth + 1);
+      // tag arrays with their key name so we can classify them
+      return arr.map(a => ({ arr: a, key: k }));
+    });
+  }
+  return [];
+}
+
+async function parseAllJsonFiles(zip) {
+  const followers = new Set();
+  const following = new Set();
+
+  const files = [];
+  zip.forEach((relativePath, file) => {
+    if (relativePath.endsWith('.json') && !file.dir) files.push({ path: relativePath, file });
+  });
+
+  for (const { path, file } of files) {
+    try {
+      const txt = await file.async('string');
+      const data = JSON.parse(txt);
+      // Use only the filename (not full path) to classify
+      const filename = path.replace(/\\/g, '/').split('/').pop().toLowerCase();
+      const isFollowingFile = filename.startsWith('following');
+      const isFollowersFile = filename.startsWith('follower');
+      const target = isFollowingFile ? following : followers;
+
+      // ── Strategy 1: explicit relationship keys ──
+      if (data.relationships_following) { parseUserList(data.relationships_following).forEach(u => following.add(u)); continue; }
+      if (data.relationships_followers) { parseUserList(data.relationships_followers).forEach(u => followers.add(u)); continue; }
+
+      // ── Strategy 2: array at root ──
+      if (Array.isArray(data) && data.length > 0) {
+        if (isFollowingFile || isFollowersFile) {
+          parseUserList(data).forEach(u => target.add(u));
+          continue;
+        }
+      }
+
+      // ── Strategy 3: file name tells us type → try EVERY array value in the object ──
+      if ((isFollowingFile || isFollowersFile) && !Array.isArray(data)) {
+        for (const val of Object.values(data)) {
+          if (Array.isArray(val)) parseUserList(val).forEach(u => target.add(u));
+        }
+        continue;
+      }
+
+      // ── Strategy 4: generic named keys ──
+      if (data.following && Array.isArray(data.following)) parseUserList(data.following).forEach(u => following.add(u));
+      if (data.followers && Array.isArray(data.followers)) parseUserList(data.followers).forEach(u => followers.add(u));
+    } catch (e) { /* skip malformed */ }
+  }
+
+  return { followers, following };
+}
+
+// ===================================================
+// AUTO-CATEGORIZATION
+// ===================================================
+
+// Comprehensive Israeli first-name database (English transliterations + Hebrew)
+const ISRAELI_NAMES = new Set([
+  // Male — English/transliteration
+  'avi','aviad','avichai','avigdor','avihay','aviram','avishay','avital','aviv','avner','avraham',
+  'adam','adi','adir','ido','idan','iddo',
+  'amit','amitai','amir','amram','amiel','ami','amos',
+  'ariel','ari','arel','aharon','aron',
+  'ofer','ofir','ofek','oded','omer','omri','osher','or','uri','uzi','oz',
+  'eitan','eitam','eytan','elan','erez','eran','ran',
+  'elad','eli','eliahu','eliav','eliezer','elior','elimelech','elinoam','eliran','elisha','eliyahu','elnatan',
+  'gad','gadi','gal','galil','gilad','gili','gidon','gideon','guy',
+  'harel','haim','chaim','hillel',
+  'yoav','yoel','yotam','yair','yaron','yarden','yafit','yagil','yaniv','yanai',
+  'yehiel','yehonatan','yehoshua','yehuda','yishai','yisrael','yitzhak','yochai','yonatan','yoni','yosef','yossi','yoram',
+  'kfir','keshet',
+  'liad','liav','lior','liron','liran','lidar','litan',
+  'maor','matan','matanya','matanel','menachem','meir','michael','micha','mor','moshe',
+  'natan','netanel','nir','niran','nitzan','noam',
+  'oran','oren','ofek',
+  'paz','pini','pinchas',
+  'rami','rani','ranen','raz','reuven','roi','ron','ronen','rotem',
+  'sagiv','sagi','sagie','shachar','shai','shaked','shaul','shay','shlomi','shlomo','shimon',
+  'tamir','tom','tomer','tzachi','tzach','tzur','tzvi',
+  'yuval',
+  // Female — English/transliteration
+  'abigail','ada','adva','afik','afrat','agam','anat','ayelet','asnat','atara','avigail',
+  'bar','batya','bracha','chana',
+  'dafna','dalia','dalya','danit','danya','dina','dikla',
+  'edna','efrat','einat','esti',
+  'galit','galia','gilah','hadassah','hagit','hana','hedva','hila','hili',
+  'idit','inbal','iris',
+  'keren','kalanit',
+  'leah','lihi','liraz','limor','lital',
+  'maya','maayan','meitar','meital','michal','miriam','moriya',
+  'naama','naomi','neta','nili','nira','noa','nofar','noga','nofit',
+  'ofra','orly','osnat',
+  'pnina',
+  'rachel','rivka','romi','rona','ronit',
+  'sara','sapir','shani','sharon','shira','sigal','smadar',
+  'tali','tamar','tova','tchiya','tzippora','tzippi',
+  'yafit','yael','yarden','yehudit',
+  'zahava','ziva',
+  // Male — Hebrew
+  'אבי','אביאד','אביחי','אביגדור','אביהי','אביתר','אביב','אבנר','אברהם',
+  'אדיאל','אדין','אדיר','עדי','אדם','עידן','עידו',
+  'עמית','עמיתי','עמיר','עמרם','עמיאל','עמי','עמוס',
+  'אריאל','ארי','אהרון','אהד',
+  'עובד','עופר','אופיר','אופק','עודד','עומר','עמרי','אושר','אור','אורי','עוזי','עוז',
+  'איתן','איתם','אייתן','אילן','ארז','עירן',
+  'אלעד','אלי','אליה','אליהו','אליעזר','אליאור','אלימלך','אלינועם','אלירן','אלישע','אלנתן',
+  'גד','גדי','גל','גלעד','גילי','גדעון','גיא',
+  'הראל','חיים','הלל',
+  'יואב','יואל','יותם','יאיר','יארון','ירדן','יפית','יגיל','יניב','ינאי','ירון',
+  'יחיאל','יהונתן','יהושע','יהודה','ישי','ישראל','יצחק','יוחאי','יוחנן','יונתן','יוני','יוסף','יוסי','יורם',
+  'כפיר','קשת',
+  'ליאד','ליאב','ליאור','לירון','לירן','לידר','ליתן',
+  'מאור','מתן','מתניה','מתנאל','מנחם','מאיר','מיכאל','מיכה','מור','משה',
+  'נתן','נתנאל','ניר','נירן','ניצן','נועם',
+  'אורן',
+  'פז','פיני','פינחס',
+  'רן','רמי','רני','רנן','רז','ראובן','רועי','רון','רונן','רותם',
+  'שגיב','שגיא','שחר','שי','שקד','שאול','שלמי','שלמה','שמעון',
+  'תמיר','תום','תומר','צחי','צח','צור','צבי','יובל',
+  // Female — Hebrew
+  'אביגיל','עדה','אדוה','אפיק','אפרת','אגם','ענת','איילת','אסנת','עטרה','אביטל',
+  'בר','בת','בתיה','ברכה','חנה',
+  'דפנה','דליה','דניה','דינה','דיקלה',
+  'אדנה','עינת',
+  'גלית','גל','גליה','גילה','גילי',
+  'הדסה','חגית','הדוה','הילה','הילי',
+  'אידית','ענבל','איריס',
+  'קרן','כלנית',
+  'לאה','ליהי','לירז','לירן','לירון','לימור','ליטל',
+  'מאיה','מעיין','מיטר','מיטל','מיכל','מרים','מור','מוריה',
+  'נעמה','נעמי','נטע','ניל','נירה','ניצן','נועה','נופר','נגה','נפית',
+  'אופרה','אורלי','עוסנת',
+  'פנינה',
+  'רחל','רבקה','רומי','רונה','רונית',
+  'שרה','ספיר','שקד','שני','שרון','שירה','שיגל','סמדר',
+  'טלי','תמר','טובה','ציפורה','ציפי',
+  'יפית','יעל','ירדן','יהודית','זהבה','זיוה',
+]);
+
+function tokenizeUsername(u) {
+  return u.toLowerCase().split(/[._\-0-9@]+/).filter(t => t.length >= 2);
+}
+
+function hasIsraeliName(u) {
+  const tokens = tokenizeUsername(u);
+  return tokens.some(t => ISRAELI_NAMES.has(t));
+}
+
+const CAT_PATTERNS = {
+  humor:    /meme|fun|lol|comedy|joke|humor|humour|funny|tzchok|tzachok|banter|rofl|haha/i,
+  food:     /food|eat|chef|cook|kitchen|recipe|cafe|eats|pizza|sushi|burger|grill|bakery|pastry|vegan|yummy|delicious|resto|restaurant|catering/i,
+  sports:   /sport|fitness|gym|football|basketball|soccer|tennis|golf|swim|run|marathon|workout|crossfit|yoga|pilates|boxing|martial/i,
+  music:    /music|dj|rap|beat|singer|track|song|artist|band|guitar|piano|drum|acoustic|hiphop|hip_hop|edm|pop|rock/i,
+  travel:   /travel|trip|adventure|explore|wander|backpack|journey|vacation|holiday|tour|world|globe|nomad/i,
+  news:     /news|media|report|press|journal|daily|times|post|herald|gazette|magazine|blog/i,
+  business: /shop|store|official|brand|market|company|corp|inc|ltd|co|biz|solutions|services|agency|studio|design|creative|digital|tech|app|dev/i,
+};
+
+function autoDetectCategory(username) {
+  const u = username.toLowerCase();
+  // Israeli name match takes priority — strongest private-person signal
+  if (hasIsraeliName(u)) return 'private';
+  for (const [catId, pattern] of Object.entries(CAT_PATTERNS)) {
+    if (pattern.test(u)) return catId;
+  }
+  // Fallback heuristic: firstname+digits only (strict — avoids random_word_word false positives)
+  if (/^[a-z]{3,12}\d{2,6}$/.test(u)) return 'private';
+  return null;
+}
+
+function runAutoCategorize() {
+  const allUsers = [...state.following, ...state.followers];
+  let count = 0;
+  for (const u of allUsers) {
+    if (!state.userCategories[u]) {
+      const cat = autoDetectCategory(u);
+      if (cat) { state.userCategories[u] = cat; count++; }
+    }
+  }
+  const msg = state.lang === 'he'
+    ? `${t('autoCatDone')}: ${count} ${t('accounts')} ${t('autoCatResult')}`
+    : `${t('autoCatDone')}: ${count} ${t('accounts')} ${t('autoCatResult')}`;
+  showToast(msg);
+  renderDashboard();
+}
+
+// ===================================================
+// CATEGORY HELPERS
+// ===================================================
+function getAllCategories() {
+  return [...BUILTIN_CATS, ...state.customCategories];
+}
+
+function getCatById(id) {
+  return getAllCategories().find(c => c.id === id);
+}
+
+function getCatDisplay(id) {
+  const cat = getCatById(id);
+  if (!cat) return null;
+  const name = state.lang === 'he' ? (cat.name_he || cat.name) : (cat.name_en || cat.name);
+  return { name, color: cat.color, bg: cat.bg || cat.color + '22' };
+}
+
+// ===================================================
+// COMPUTED LISTS
+// ===================================================
+function getNotFollowingBack() {
+  return [...state.following].filter(u => !state.followers.has(u) && !state.unfollowQueue.has(u));
+}
+function getMutual() {
+  return [...state.following].filter(u => state.followers.has(u));
+}
+function getFollowingMe() {
+  return [...state.followers].filter(u => !state.following.has(u));
+}
+function getQueue() {
+  return [...state.unfollowQueue];
+}
+
+function filterAndPage(list) {
+  let filtered = list;
+  if (state.searchQuery) {
+    const q = state.searchQuery.toLowerCase();
+    filtered = filtered.filter(u => u.includes(q));
+  }
+  if (state.catFilter === 'none') {
+    filtered = filtered.filter(u => !state.userCategories[u]);
+  } else if (state.catFilter !== 'all') {
+    filtered = filtered.filter(u => state.userCategories[u] === state.catFilter);
+  }
+  const total = filtered.length;
+  const pages = Math.ceil(total / state.pageSize);
+  const page = Math.min(state.currentPage, pages || 1);
+  const start = (page - 1) * state.pageSize;
+  return { items: filtered.slice(start, start + state.pageSize), total, pages, page, allFiltered: filtered };
+}
+
+// ===================================================
+// RENDER DASHBOARD
+// ===================================================
+function renderDashboard() {
+  renderStats();
+  renderTabs();
+  renderTabContent();
+}
+
+function renderStats() {
+  const notF = getNotFollowingBack();
+  const mutual = getMutual();
+  const followMe = getFollowingMe();
+  const queue = getQueue();
+
+  // Summary totals bar
+  const summaryEl = document.getElementById('stats-summary');
+  if (summaryEl) {
+    summaryEl.innerHTML = `
+      <span>
+        <strong>${state.following.size.toLocaleString()}</strong>
+        ${t('totalFollowing')}
+      </span>
+      <span style="color:var(--border)">|</span>
+      <span>
+        <strong>${state.followers.size.toLocaleString()}</strong>
+        ${t('totalFollowers')}
+      </span>
+    `;
+  }
+
+  const items = [
+    { tab: 'not-following', icon: '😶', num: notF.length, label: t('statNotFollowing') },
+    { tab: 'mutual',        icon: '🤝', num: mutual.length, label: t('statMutual') },
+    { tab: 'follow-me',     icon: '👥', num: followMe.length, label: t('statFollowMe') },
+    { tab: 'queue',         icon: '🗑️', num: queue.length, label: t('statQueue') },
+  ];
+
+  document.getElementById('stats-grid').innerHTML = items.map(item => `
+    <div class="stat-card ${state.currentTab === item.tab ? 'active' : ''}" onclick="switchTab('${item.tab}')">
+      <div class="icon">${item.icon}</div>
+      <div class="num">${item.num.toLocaleString()}</div>
+      <div class="label">${item.label}</div>
+    </div>
+  `).join('');
+}
+
+function renderTabs() {
+  const notF = getNotFollowingBack();
+  const mutual = getMutual();
+  const followMe = getFollowingMe();
+  const queue = getQueue();
+
+  const tabs = [
+    { id: 'not-following', label: t('tabNotFollowing'), count: notF.length },
+    { id: 'mutual',        label: t('tabMutual'),       count: mutual.length },
+    { id: 'follow-me',     label: t('tabFollowMe'),     count: followMe.length },
+    { id: 'queue',         label: t('tabQueue'),        count: queue.length },
+    { id: 'categories',    label: t('tabCategories'),   count: null },
+  ];
+
+  document.getElementById('tabs').innerHTML = tabs.map(tab => `
+    <button class="tab-btn ${state.currentTab === tab.id ? 'active' : ''}" onclick="switchTab('${tab.id}')">
+      ${tab.label}
+      ${tab.count !== null ? `<span class="tab-badge">${tab.count}</span>` : ''}
+    </button>
+  `).join('');
+}
+
+function switchTab(tabId) {
+  state.currentTab = tabId;
+  state.currentPage = 1;
+  state.searchQuery = '';
+  state.catFilter = 'all';
+  state.selectedUsers = new Set();
+  state.selectMode = false;
+  renderDashboard();
+}
+
+function renderTabContent() {
+  const el = document.getElementById('tab-content');
+  switch (state.currentTab) {
+    case 'not-following': el.innerHTML = buildUserListHTML(getNotFollowingBack(), 'not-following', t('sectionInfoNotFollowing')); break;
+    case 'mutual':        el.innerHTML = buildUserListHTML(getMutual(), 'mutual', t('sectionInfoMutual')); break;
+    case 'follow-me':     el.innerHTML = buildUserListHTML(getFollowingMe(), 'follow-me', t('sectionInfoFollowMe')); break;
+    case 'queue':         el.innerHTML = buildQueueHTML(); break;
+    case 'categories':    el.innerHTML = buildCategoriesHTML(); break;
+  }
+  bindTabEvents();
+}
+
+// ===================================================
+// USER LIST HTML
+// ===================================================
+function buildUserListHTML(list, tabId, infoText) {
+  const showQueueBtn = tabId === 'not-following';
+  const { items, total, pages, page, allFiltered } = filterAndPage(list);
+  const cats = getAllCategories();
+
+  const catFilterOptions = `
+    <option value="all">${t('filterAll')}</option>
+    <option value="none">${t('filterNone')}</option>
+    ${cats.map(c => `<option value="${c.id}">${state.lang === 'he' ? (c.name_he || c.name) : (c.name_en || c.name)}</option>`).join('')}
+  `;
+
+  const selectedCount = [...state.selectedUsers].filter(u => list.includes(u)).length;
+  const showBulkBar = selectedCount > 0;
+
+  let html = `
+    <div class="section-info">${infoText} — <strong>${total}</strong></div>
+    <div class="toolbar">
+      <input class="search-box" type="text" placeholder="${t('searchPlaceholder')}" value="${escapeHtml(state.searchQuery)}" id="search-input" />
+      <select class="filter-select" id="cat-filter-select">
+        ${catFilterOptions}
+      </select>
+      ${showQueueBtn ? `<button class="auto-cat-btn" id="auto-cat-btn">
+        ${t('autoCategorize')}
+      </button>` : ''}
+      ${showQueueBtn ? `<button class="select-all-btn" id="select-mode-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        ${state.selectMode ? t('deselectAll') : t('selectAll')}
+      </button>` : ''}
+    </div>
+    <div class="bulk-bar ${showBulkBar ? 'visible' : ''}" id="bulk-bar">
+      <span class="bulk-bar-text">${selectedCount} ${t('selectedCount')}</span>
+      <div class="bulk-bar-actions">
+        ${showQueueBtn ? `<button class="bulk-action-btn" onclick="bulkAddToQueue()">${t('addSelectedToQueue')}</button>` : ''}
+        <button class="bulk-action-btn" onclick="bulkDeselect()">${t('deselectAll')}</button>
+      </div>
+    </div>
+  `;
+
+  if (items.length === 0) {
+    html += `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <h3>${t('noResults')}</h3>
+        <p>${t('noResultsDesc')}</p>
+      </div>`;
+  } else {
+    html += `<div class="user-grid" id="user-grid">`;
+    for (const username of items) {
+      const inQueue = state.unfollowQueue.has(username);
+      const catId = state.userCategories[username];
+      const catInfo = catId ? getCatDisplay(catId) : null;
+      const isSelected = state.selectedUsers.has(username);
+      html += `
+        <div class="user-card ${inQueue ? 'in-queue' : ''} ${state.selectMode ? 'selectable' : ''}" id="card-${CSS.escape(username)}">
+          ${state.selectMode ? `<div class="user-check"><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelect('${escapeHtml(username)}')" /></div>` : ''}
+          <div class="user-avatar">${username[0]}</div>
+          <div class="user-info">
+            <div class="user-name">
+              <a href="https://www.instagram.com/${encodeURIComponent(username)}/" target="_blank" rel="noopener">@${escapeHtml(username)}</a>
+            </div>
+            <div class="user-meta">
+              ${catInfo
+                ? `<span class="cat-badge" style="background:${catInfo.bg};color:${catInfo.color}" onclick="openCatPicker('${escapeHtml(username)}', event)">${catInfo.name}</span>`
+                : `<span class="cat-badge" style="background:var(--bg3);color:var(--text3)" onclick="openCatPicker('${escapeHtml(username)}', event)">${t('uncat')}</span>`
+              }
+              ${inQueue ? `<span style="font-size:11px;color:#f59e0b;font-weight:700">⏳ ${t('tabQueue')}</span>` : ''}
+            </div>
+          </div>
+          <div class="user-actions">
+            ${showQueueBtn && !inQueue ? `<button class="action-btn btn-queue" onclick="addToQueue('${escapeHtml(username)}')">${t('addToQueue')}</button>` : ''}
+            ${showQueueBtn && inQueue ? `<button class="action-btn btn-unqueue" onclick="removeFromQueue('${escapeHtml(username)}')">${t('removeFromQueue')}</button>` : ''}
+          </div>
+        </div>`;
+    }
+    html += `</div>`;
+    if (pages > 1) html += buildPaginationHTML(pages, page);
+  }
+  return html;
+}
+
+// ===================================================
+// QUEUE HTML
+// ===================================================
+function buildQueueHTML() {
+  const queue = getQueue();
+  if (queue.length === 0) {
+    return `
+      <div class="section-info">${t('sectionInfoQueue')}</div>
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <h3>${t('emptyQueue')}</h3>
+        <p>${t('emptyQueueDesc')}</p>
+      </div>`;
+  }
+
+  const { items, total, pages, page } = filterAndPage(queue);
+  let html = `
+    <div class="section-info">${t('sectionInfoQueue')}</div>
+    <div class="queue-toolbar">
+      <span class="queue-count"><span>${total}</span> ${t('queueCount')}</span>
+      <div class="queue-actions">
+        <button class="btn-secondary" onclick="clearQueue()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          ${t('clearQueue')}
+        </button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input class="search-box" type="text" placeholder="${t('searchPlaceholder')}" value="${escapeHtml(state.searchQuery)}" id="search-input" />
+    </div>
+    <div class="user-grid">`;
+
+  for (const username of items) {
+    const catId = state.userCategories[username];
+    const catInfo = catId ? getCatDisplay(catId) : null;
+    html += `
+      <div class="user-card" id="card-${CSS.escape(username)}">
+        <div class="user-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">${username[0]}</div>
+        <div class="user-info">
+          <div class="user-name">
+            <a href="https://www.instagram.com/${encodeURIComponent(username)}/" target="_blank" rel="noopener">@${escapeHtml(username)}</a>
+          </div>
+          <div class="user-meta">
+            ${catInfo
+              ? `<span class="cat-badge" style="background:${catInfo.bg};color:${catInfo.color}">${catInfo.name}</span>`
+              : `<span class="cat-badge" style="background:var(--bg3);color:var(--text3)">${t('uncat')}</span>`
+            }
+          </div>
+        </div>
+        <div class="user-actions">
+          <a class="action-btn btn-instagram" href="https://www.instagram.com/${encodeURIComponent(username)}/" target="_blank" rel="noopener">${t('openInstagram')}</a>
+          <button class="action-btn btn-success" onclick="returnFromQueue('${escapeHtml(username)}')">${t('returnToList')}</button>
+        </div>
+      </div>`;
+  }
+
+  html += `</div>`;
+  if (pages > 1) html += buildPaginationHTML(pages, page);
+  return html;
+}
+
+// ===================================================
+// CATEGORIES HTML
+// ===================================================
+function buildCategoriesHTML() {
+  const custom = state.customCategories;
+  let html = `
+    <div class="category-panel">
+      <h2 class="cat-section-title">${t('catManageTitle')}</h2>
+      <h3 class="cat-section-title" style="font-size:14px;color:var(--text2)">${t('catBuiltin')}</h3>
+      <div class="cat-list">
+        ${BUILTIN_CATS.map(c => `
+          <div class="cat-chip" style="background:${c.bg || c.color + '22'};color:${c.color}">
+            ${state.lang === 'he' ? c.name_he : c.name_en}
+          </div>
+        `).join('')}
+      </div>
+      <h3 class="cat-section-title" style="font-size:14px;color:var(--text2)">${t('catCustom')}</h3>
+      <div class="cat-list" id="custom-cat-list">
+        ${custom.length === 0 ? `<span style="color:var(--text3);font-size:13px">—</span>` : ''}
+        ${custom.map(c => `
+          <div class="cat-chip" style="background:${c.color}22;color:${c.color}">
+            ${escapeHtml(c.name)}
+            <button class="cat-delete" onclick="deleteCustomCat('${c.id}')" title="מחק">×</button>
+          </div>
+        `).join('')}
+      </div>
+      <div class="cat-add-form">
+        <input type="text" class="cat-name-input" id="new-cat-name" placeholder="${t('catAddPlaceholder')}" onkeydown="if(event.key==='Enter')addCustomCat()" />
+        <input type="color" class="color-picker" id="new-cat-color" value="#7c3aed" title="Color" />
+        <button class="btn-primary" onclick="addCustomCat()">${t('catAddBtn')}</button>
+      </div>
+    </div>`;
+  return html;
+}
+
+// ===================================================
+// PAGINATION HTML
+// ===================================================
+function buildPaginationHTML(pages, current) {
+  let html = `<div class="pagination">`;
+  for (let i = 1; i <= pages; i++) {
+    if (pages > 10 && Math.abs(i - current) > 3 && i !== 1 && i !== pages) {
+      if (i === 2 || i === pages - 1) html += `<span style="color:var(--text3);padding:6px 4px">…</span>`;
+      continue;
+    }
+    html += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+// ===================================================
+// EVENT BINDING
+// ===================================================
+function bindTabEvents() {
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.value = state.searchQuery;
+    searchInput.addEventListener('input', e => {
+      state.searchQuery = e.target.value;
+      state.currentPage = 1;
+      renderTabContent();
+      // restore focus
+      const el = document.getElementById('search-input');
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    });
+    if (state.searchQuery) { searchInput.focus(); }
+  }
+
+  const catFilter = document.getElementById('cat-filter-select');
+  if (catFilter) {
+    catFilter.value = state.catFilter;
+    catFilter.addEventListener('change', e => {
+      state.catFilter = e.target.value;
+      state.currentPage = 1;
+      renderTabContent();
+    });
+  }
+
+  const autoCatBtn = document.getElementById('auto-cat-btn');
+  if (autoCatBtn) autoCatBtn.addEventListener('click', runAutoCategorize);
+
+  const selectModeBtn = document.getElementById('select-mode-btn');
+  if (selectModeBtn) {
+    selectModeBtn.addEventListener('click', () => {
+      if (state.selectMode && state.selectedUsers.size > 0) {
+        state.selectedUsers = new Set();
+        renderTabContent();
+      } else {
+        state.selectMode = !state.selectMode;
+        if (!state.selectMode) state.selectedUsers = new Set();
+        renderTabContent();
+      }
+    });
+  }
+
+}
+
+// ===================================================
+// QUEUE ACTIONS
+// ===================================================
+function addToQueue(username) {
+  state.unfollowQueue.add(username);
+  renderDashboard();
+}
+
+function removeFromQueue(username) {
+  state.unfollowQueue.delete(username);
+  renderDashboard();
+}
+
+function returnFromQueue(username) {
+  state.unfollowQueue.delete(username);
+  renderDashboard();
+}
+
+function clearQueue() {
+  state.unfollowQueue = new Set();
+  renderDashboard();
+}
+
+// ===================================================
+// SELECTION ACTIONS
+// ===================================================
+function toggleSelect(username) {
+  if (state.selectedUsers.has(username)) state.selectedUsers.delete(username);
+  else state.selectedUsers.add(username);
+  renderTabContent();
+}
+
+function bulkAddToQueue() {
+  for (const u of state.selectedUsers) state.unfollowQueue.add(u);
+  state.selectedUsers = new Set();
+  state.selectMode = false;
+  renderDashboard();
+}
+
+function bulkDeselect() {
+  state.selectedUsers = new Set();
+  renderTabContent();
+}
+
+function goToPage(n) {
+  state.currentPage = n;
+  renderTabContent();
+  document.getElementById('tab-content').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ===================================================
+// CATEGORY PICKER
+// ===================================================
+let catPickerTarget = null;
+
+function openCatPicker(username, event) {
+  event.stopPropagation();
+  catPickerTarget = username;
+  const picker = document.getElementById('cat-picker');
+  const cats = [{ id: '', name_he: 'ללא קטגוריה', name_en: 'No Category', color: '#888', bg: 'var(--bg3)' }, ...getAllCategories()];
+  picker.innerHTML = cats.map(c => {
+    const name = state.lang === 'he' ? (c.name_he || c.name) : (c.name_en || c.name);
+    const color = c.color;
+    return `<div class="cat-picker-item" onclick="setCat('${username}','${c.id}')">
+      <div class="cat-dot" style="background:${color}"></div>
+      ${escapeHtml(name)}
+    </div>`;
+  }).join('');
+  const rect = event.target.getBoundingClientRect();
+  picker.style.display = 'block';
+  const ph = picker.offsetHeight || 200;
+  const top = rect.bottom + window.scrollY + 4;
+  picker.style.top = top + 'px';
+  picker.style.left = state.lang === 'he' ? 'auto' : (rect.left + window.scrollX) + 'px';
+  picker.style.right = state.lang === 'he' ? (window.innerWidth - rect.right) + 'px' : 'auto';
+}
+
+function setCat(username, catId) {
+  if (catId === '') delete state.userCategories[username];
+  else state.userCategories[username] = catId;
+  document.getElementById('cat-picker').style.display = 'none';
+  catPickerTarget = null;
+  renderTabContent();
+}
+
+function closeCatPickerOutside(e) {
+  const picker = document.getElementById('cat-picker');
+  if (picker && !picker.contains(e.target)) picker.style.display = 'none';
+}
+
+// ===================================================
+// CUSTOM CATEGORIES
+// ===================================================
+function addCustomCat() {
+  const nameEl = document.getElementById('new-cat-name');
+  const colorEl = document.getElementById('new-cat-color');
+  const name = nameEl.value.trim();
+  if (!name) return;
+  const id = 'custom_' + Date.now();
+  state.customCategories.push({ id, name, name_he: name, name_en: name, color: colorEl.value, bg: colorEl.value + '22' });
+  nameEl.value = '';
+  renderTabContent();
+}
+
+function deleteCustomCat(id) {
+  state.customCategories = state.customCategories.filter(c => c.id !== id);
+  for (const u in state.userCategories) {
+    if (state.userCategories[u] === id) delete state.userCategories[u];
+  }
+  renderTabContent();
+}
+
+// ===================================================
+// APP RESET
+// ===================================================
+function confirmReset() {
+  document.getElementById('reset-modal-overlay').classList.add('open');
+}
+
+function closeResetModal(e) {
+  if (!e || e.target === document.getElementById('reset-modal-overlay')) {
+    document.getElementById('reset-modal-overlay').classList.remove('open');
+  }
+}
+
+function resetApp() {
+  document.getElementById('reset-modal-overlay').classList.remove('open');
+  state.followers = new Set();
+  state.following = new Set();
+  state.unfollowQueue = new Set();
+  state.userCategories = {};
+  state.customCategories = [];
+  state.currentTab = 'not-following';
+  state.searchQuery = '';
+  state.catFilter = 'all';
+  state.currentPage = 1;
+  state.selectMode = false;
+  state.selectedUsers = new Set();
+  state.loadedFileName = '';
+  document.getElementById('file-input').value = '';
+  document.getElementById('json-followers-input').value = '';
+  document.getElementById('json-following-input').value = '';
+  jsonFiles.followers = null;
+  jsonFiles.following = null;
+  ['followers','following'].forEach(t => {
+    document.getElementById('jbox-' + t).classList.remove('loaded');
+    document.getElementById('jloaded-' + t).style.display = 'none';
+  });
+  document.getElementById('json-start-btn').classList.remove('ready');
+  document.getElementById('upload-section').style.display = 'block';
+  document.getElementById('dashboard-section').style.display = 'none';
+  hideError();
+}
+
+// ===================================================
+// FEATURE CARDS (landing page)
+// ===================================================
+function renderFeatures() {
+  const features = [
+    { icon: '👥', titleKey: 'featFollowersTitle', descKey: 'featFollowersDesc' },
+    { icon: '🗑️', titleKey: 'featQueueTitle',     descKey: 'featQueueDesc' },
+    { icon: '✨', titleKey: 'featCatsTitle',       descKey: 'featCatsDesc' },
+  ];
+  const el = document.getElementById('features-row');
+  if (el) el.innerHTML = features.map(f => `
+    <div class="feature-card">
+      <div class="feature-icon">${f.icon}</div>
+      <h3>${t(f.titleKey)}</h3>
+      <p>${t(f.descKey)}</p>
+    </div>
+  `).join('');
+}
+
+// ===================================================
+// TOAST
+// ===================================================
+function showToast(msg) {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.style.cssText = `position:fixed;bottom:24px;${state.lang === 'he' ? 'right' : 'left'}:24px;background:#111;color:#fff;padding:12px 20px;border-radius:50px;font-size:14px;font-weight:600;z-index:500;box-shadow:0 4px 16px rgba(0,0,0,0.3);transition:opacity 0.3s;opacity:1`;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+}
+
+// ===================================================
+// UTILS
+// ===================================================
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ===================================================
+// INIT
+// ===================================================
+(function init() {
+  const savedTheme = localStorage.getItem('igm_theme') || 'light';
+  const savedLang = localStorage.getItem('igm_lang') || 'he';
+  state.theme = savedTheme;
+  state.lang = savedLang;
+  applyTheme();
+  applyLang();
+  updateStaticText();
+  // set cat filter select after render
+  document.addEventListener('click', closeCatPickerOutside);
+})();
+</script>
+</body>
+</html>
