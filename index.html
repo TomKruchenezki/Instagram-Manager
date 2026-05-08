@@ -387,7 +387,7 @@
       transition: opacity var(--transition);
     }
     .cat-badge:hover { opacity: 0.75; }
-    .user-actions { display: flex; gap: 6px; flex-direction: column; flex-shrink: 0; }
+    .user-actions { display: flex; gap: 6px; flex-direction: column; flex-shrink: 0; align-items: flex-start; }
     .btn-compact { padding: 5px 8px !important; font-size: 11px !important; }
     .btn-icon-only {
       width: 34px; height: 34px; border-radius: 50%; border: none;
@@ -412,7 +412,8 @@
       white-space: nowrap;
     }
     .action-btn:hover { opacity: 0.82; transform: scale(1.04); }
-    .btn-queue { background: #f59e0b; color: white; }
+    .btn-queue { background: #f59e0b; color: white; white-space: normal; max-width: 110px; text-align: center; line-height: 1.3; }
+    .btn-unqueue { white-space: normal; max-width: 110px; text-align: center; line-height: 1.3; }
     .btn-unqueue { background: #6b7280; color: white; }
     .btn-danger { background: #ef4444; color: white; }
     .btn-success { background: #10b981; color: white; }
