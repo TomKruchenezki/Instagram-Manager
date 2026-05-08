@@ -861,8 +861,19 @@
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="guide-steps" id="guide-steps-inline">
+        <div class="guide-tabs" style="padding: 0 0 12px;">
+          <button class="guide-tab-btn active" id="inline-tab-text" onclick="switchInlineGuideTab('text')">📖 מדריך כתוב</button>
+          <button class="guide-tab-btn" id="inline-tab-video" onclick="switchInlineGuideTab('video')">🎬 סרטון מודרך</button>
+        </div>
         <div id="guide-steps-content"></div>
-        <a href="https://accountscenter.instagram.com/info_and_permissions/dyi/" target="_blank" rel="noopener" class="guide-link">
+        <div id="guide-video-inline" style="display:none">
+          <div class="guide-video-wrap" style="padding: 0 0 16px;">
+            <video controls playsinline preload="metadata" style="width:100%;border-radius:10px;background:#000">
+              <source src="סרטון הדרכה להורדת הקבצי JSON.mp4" type="video/mp4">
+            </video>
+          </div>
+        </div>
+        <a href="https://accountscenter.instagram.com/info_and_permissions/dyi/" target="_blank" rel="noopener" class="guide-link" id="inline-guide-link">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           <span data-t="goToInstagram">פתח הגדרות אינסטגרם</span>
         </a>
@@ -1003,10 +1014,10 @@ const T = {
     filterAll: 'כל הקטגוריות',
     filterNone: 'ללא קטגוריה',
     autoCategorize: '✨ סיווג אוטומטי',
-    addToQueue: 'הורד עוקב',
+    addToQueue: 'העבר לרשימת הסרת עוקבים',
     removeFromQueue: 'הסר מרשימה',
     openInstagram: 'פתח פרופיל',
-    returnToList: 'בטל הורדת עוקב',
+    returnToList: 'החזר לרשימה המקורית',
     noResults: 'לא נמצאו תוצאות',
     noResultsDesc: 'נסה לשנות את מונחי החיפוש',
     emptyQueue: 'הרשימה ריקה',
@@ -1016,7 +1027,7 @@ const T = {
     selectAll: 'בחר הכל',
     deselectAll: 'בטל הכל',
     selectedCount: 'נבחרו',
-    addSelectedToQueue: 'הורד עוקבים',
+    addSelectedToQueue: 'העבר לרשימת הסרת עוקבים',
     removeSelected: 'הסר מרשימה',
     catManageTitle: 'ניהול קטגוריות',
     catBuiltin: 'קטגוריות מובנות',
@@ -1049,7 +1060,7 @@ const T = {
     loadedFile: 'קובץ נטען',
     featFollowersTitle: 'מעקב עוקבים',
     featFollowersDesc: 'גלה מי לא עוקב בחזרה, מי עוקב הדדי ומי עוקב אחריך',
-    featQueueTitle: 'תור הורדת עוקבים',
+    featQueueTitle: 'רשימה להסרת עוקבים',
     featQueueDesc: 'סמן משתמשים שתרצה להוריד מהם ונהל רשימה מסודרת',
     featCatsTitle: 'קטגוריות חכמות',
     featCatsDesc: 'סווג אוטומטי לפי שם משתמש — אנשים פרטיים, עסקים, הומור ועוד',
@@ -1098,10 +1109,10 @@ const T = {
     filterAll: 'All Categories',
     filterNone: 'No Category',
     autoCategorize: '✨ Auto-Categorize',
-    addToQueue: 'Remove Follower',
+    addToQueue: 'Move to Removal List',
     removeFromQueue: 'Remove from List',
     openInstagram: 'Open Profile',
-    returnToList: 'Cancel Removal',
+    returnToList: 'Return to Original List',
     noResults: 'No results found',
     noResultsDesc: 'Try changing your search terms',
     emptyQueue: 'List is empty',
@@ -1111,7 +1122,7 @@ const T = {
     selectAll: 'Select All',
     deselectAll: 'Deselect All',
     selectedCount: 'selected',
-    addSelectedToQueue: 'Remove Followers',
+    addSelectedToQueue: 'Move to Removal List',
     removeSelected: 'Remove from List',
     catManageTitle: 'Manage Categories',
     catBuiltin: 'Built-in Categories',
@@ -1144,7 +1155,7 @@ const T = {
     loadedFile: 'Loaded file',
     featFollowersTitle: 'Follower Tracking',
     featFollowersDesc: 'Discover who doesn\'t follow back, mutual followers, and who follows you',
-    featQueueTitle: 'Unfollow Queue',
+    featQueueTitle: 'Remove Followers List',
     featQueueDesc: 'Mark users you want to unfollow and manage an organized list',
     featCatsTitle: 'Smart Categories',
     featCatsDesc: 'Auto-categorize by username — private people, businesses, humor and more',
@@ -1310,6 +1321,14 @@ function toggleGuideCard() {
   header.classList.toggle('open');
   steps.classList.toggle('open');
   if (steps.classList.contains('open')) renderGuideStepsInline();
+}
+
+function switchInlineGuideTab(tab) {
+  document.getElementById('inline-tab-text').classList.toggle('active', tab === 'text');
+  document.getElementById('inline-tab-video').classList.toggle('active', tab === 'video');
+  document.getElementById('guide-steps-content').style.display = tab === 'text' ? '' : 'none';
+  document.getElementById('guide-video-inline').style.display = tab === 'video' ? '' : 'none';
+  document.getElementById('inline-guide-link').style.display = tab === 'text' ? '' : 'none';
 }
 
 // ===================================================
@@ -1941,6 +1960,7 @@ function buildUserListHTML(list, tabId, infoText) {
             </div>
           </div>
           <div class="user-actions">
+            <a class="action-btn btn-instagram" href="https://www.instagram.com/${encodeURIComponent(username)}/" target="_blank" rel="noopener">${t('openInstagram')}</a>
             ${showQueueBtn && !inQueue ? `<button class="action-btn btn-queue" onclick="addToQueue('${escapeHtml(username)}')">${t('addToQueue')}</button>` : ''}
             ${showQueueBtn && inQueue ? `<button class="action-btn btn-unqueue" onclick="removeFromQueue('${escapeHtml(username)}')">${t('removeFromQueue')}</button>` : ''}
           </div>
